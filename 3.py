@@ -1,67 +1,84 @@
 from sympy import symbols, diff, solve
+from typing import Union, Optional
+import math
 
-# Define the variable
-f = symbols('f')
+def format_scientific(num: float) -> str:
+    """Format number in scientific notation if very small/large."""
+    if abs(num) < 0.001 or abs(num) > 1000:
+        return f"{num:.2e}"
+    return f"{num:.4f}"
 
-#custom values
-a = 40
-b1 = 2.5 
-b2 = -6
-b = b1*10**b2
-
-#2.1 eredmenyei
-#periodus ido
-T = 64
-#aktiv proc ido
-c = 48.4
-#inaktiv idok
-N = 21
-
-# contants for everyone
-fmax = 800 # mhz
-fmin = 50 #mhz
-target_value = 3 * 10 ** -5 # joule
-
-# Define the function to minimize
-function = a/f + b * f**2
-
-#3.1
-# Step 1: Differentiate the function with respect to f
-derivative = diff(function, f)
-
-# Step 2: Find the critical points by setting the derivative to zero
-critical_points = solve(derivative, f)
-
-# Step 3: Filter out the real, positive critical points
-real_positive_critical_points = [point for point in critical_points if point.is_real and point > 0]
-
-f_opt = 0
-
-# Step 4: Calculate the minimum value by evaluating the function at the critical point
-if real_positive_critical_points:
-    min_f = real_positive_critical_points[0]  # In this case, only one positive critical point exists
-    minimum_value = function.subs(f, min_f)
-    print(f"The minimum occurs at f = {min_f}, where the function value is {minimum_value:.4f}")
-else:
-    print("No real positive critical points found.")
+class PowerManagement:
+    def __init__(self):
+        # System constants
+        self.fmax = 800  # MHz
+        self.fmin = 50   # MHz
+        self.target_value = 3e-5  # Joule
+        
+        # Custom values from problem
+        self.a = 40
+        self.b = 2.5 * 10**-6
+        self.T = 64      # Period time
+        self.c = 48.4    # Active process time
+        self.N = 21      # Inactive times
+        
+        # Initialize symbolic variable
+        self.f = symbols('f')
+        self.function = self.a/self.f + self.b * self.f**2
+        
+    def find_optimal_frequency(self) -> Optional[float]:
+        """Calculate optimal frequency for minimum energy consumption."""
+        derivative = diff(self.function, self.f)
+        critical_points = solve(derivative, self.f)
+        real_positive_critical_points = [
+            point for point in critical_points 
+            if point.is_real and point > 0
+        ]
+        
+        if not real_positive_critical_points:
+            return None
+        
+        f_opt = float(real_positive_critical_points[0])
+        minimum_value = float(self.function.subs(self.f, f_opt))
+        return f_opt, minimum_value
     
-f_opt = min_f
-
-#3.2
-# Calculate P(fmin)
-P_fmin = a + b * fmin**3
-
-# Solve for t in the inequality P(fmin) * t >= 3 * 10^-5
-# Rearrange to get t >= target_value / P_fmin
-if P_fmin != 0:  # Avoid division by zero
-    t_min = target_value / P_fmin * 1000000000
-    print(f"The solution is {t_min:.2f}μs")
-else:
-    print("P(fmin) is zero, cannot solve for t.")
+    def calculate_breakeven_time(self) -> Union[float, str]:
+        """Calculate the breakeven time for sleep mode."""
+        P_fmin = self.a + self.b * self.fmin**3
+        if P_fmin == 0:
+            return "Cannot calculate: P(fmin) is zero"
+        return (self.target_value / P_fmin) * 1e9  # Convert to μs
     
-#3.3
+    def calculate_total_energy(self, f_opt: float) -> float:
+        """Calculate total energy consumption for one hyperperiod."""
+        return (self.a + self.b * f_opt**3) * self.c * 1e-3 + (self.N * (self.target_value * 1e3))
 
-# ugly ass shit
-E = (a + b*f_opt ** 3)*c*10**-3 + (N * (target_value*10**3))
+    def print_results(self):
+        """Print formatted results with explanations."""
+        print("\n=== Dynamic Power Management Analysis ===\n")
+        
+        # 3.1 Optimal Frequency
+        f_opt, min_value = self.find_optimal_frequency()
+        print("3.1 Optimal Operating Frequency:")
+        print(f"  • f_opt = {format_scientific(f_opt)} MHz")
+        print(f"  • Minimum energy at this frequency = {format_scientific(min_value)} mW")
+        print()
+        
+        # 3.2 Breakeven Time
+        t_min = self.calculate_breakeven_time()
+        print("3.2 Sleep Mode Breakeven Time:")
+        print(f"  • Minimum idle time for sleep mode = {format_scientific(t_min)} μs")
+        print(f"  • This is the minimum time where P(f_min) * t ≥ {self.target_value:.0e} J")
+        print()
+        
+        # 3.3 Total Energy Consumption
+        total_energy = self.calculate_total_energy(f_opt)
+        print("3.3 Total Energy Consumption per Hyperperiod:")
+        print(f"  • Active energy: {format_scientific(self.a + self.b * f_opt**3 * self.c * 1e-3)} mJ")
+        print(f"  • Sleep transition energy: {format_scientific(self.N * self.target_value * 1e3)} mJ")
+        print(f"  • Total energy: {format_scientific(total_energy)} mJ")
 
-print(E)
+# Run the analysis
+if __name__ == "__main__":
+    pm = PowerManagement()
+    pm.print_results()
