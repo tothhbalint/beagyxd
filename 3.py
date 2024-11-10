@@ -13,14 +13,14 @@ class PowerManagement:
         # System constants
         self.fmax = 800  # MHz
         self.fmin = 50   # MHz
-        self.target_value = 3e-5  # Joule
+        self.target_value = 2e-5  # Joule
         
         # Custom values from problem
-        self.a = 40
-        self.b = 2.5 * 10**-6
-        self.T = 64      # Period time
-        self.c = 48.4    # Active process time
-        self.N = 21      # Inactive times
+        self.a = 10
+        self.b = 5 * 10**-6
+        self.T = 192      # Period time
+        self.c = 146.5    # Active process time
+        self.N = 3      # Inactive times
         
         # Initialize symbolic variable
         self.f = symbols('f')

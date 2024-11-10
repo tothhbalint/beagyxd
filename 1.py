@@ -14,21 +14,13 @@ def calculate_event_driven(A, B, bandwidth_bytes_per_sec=125000):
     return max_messages, message_time_ms
 
 def calculate_time_driven(A, B):
-    """
-    Kiszámítja az idővezérelt rendszer minimális sávszélesség igényét
-    """
-    total_variables = A * B
+    BITS_PER_MESSAGE = 768        # 720 bit payload + 40 bit overhead + 8 bit gap
+    DEADLINE_SEC = B/1000         # B ms = B/1000 sec
     
-    # Egy körben küldendő bájtok száma
-    bytes_per_round = (total_variables * 7) + (total_variables - 1)
+    bandwidth_bits_sec = (A * BITS_PER_MESSAGE) / DEADLINE_SEC
+    bandwidth_kbits_sec = bandwidth_bits_sec / 1000
     
-    # B msec alatt küldendő bájtok másodpercenként
-    bytes_per_sec = bytes_per_round * (1000 / B)
-    
-    # Átváltás Mbit/sec-re
-    bandwidth_mbits = (bytes_per_sec * 8) / 1_000_000
-    
-    return bandwidth_mbits, bytes_per_round, bytes_per_sec
+    return bandwidth_kbits_sec, BITS_PER_MESSAGE
 
 def print_results(A, B):
     """
@@ -52,25 +44,30 @@ def print_results(A, B):
     print(f"2. {B} ms alatt küldhető üzenetek száma: {max_events}")
     print(f"\nEredmény: A rendszer {max_events} állapotváltozó határérték")
     print(f"túllépését tudja időben ({B} ms alatt) jelezni.")
-    
+
     # 1.2 Idővezérelt számítások
     print("\n1.2 IDŐVEZÉRELT MŰKÖDÉS")
     print("-" * 60)
-    bandwidth, bytes_per_round, bytes_per_sec = calculate_time_driven(A, B)
+    bandwidth_kbits, bits_per_message = calculate_time_driven(A, B)
     
     print(f"Adatok:")
-    print(f"- Összes állapotváltozó száma: {A} × {B} = {A*B}")
-    print(f"\nSzámítások:")
-    print(f"1. Egy körben küldendő adatmennyiség:")
-    print(f"   - Üzenetek: {A*B} × 7 bájt = {A*B*7} bájt")
-    print(f"   - Szünetek: {A*B-1} × 1 bájt = {A*B-1} bájt")
-    print(f"   - Összesen: {bytes_per_round} bájt")
-    print(f"2. Másodpercenkénti adatmennyiség: {bytes_per_sec:.1f} bájt/sec")
-    print(f"3. Szükséges sávszélesség: {bandwidth:.3f} Mbit/sec")
+    print(f"- Csomópontok száma (A): {A}")
+    print(f"- Előírt határidő (B): {B} ms = {B/1000} sec")
+    print(f"- Egy üzenet felépítése:")
+    print(f"  * Payload: 45 × 16 = 720 bit")
+    print(f"  * Overhead: 40 bit")
+    print(f"  * Intermessage Gap: 8 bit")
+    print(f"  * Összesen: {bits_per_message} bit")
     
-    print(f"\nEredmény: A minimálisan szükséges sávszélesség {bandwidth:.3f} Mbit/sec")
+    print(f"\nSzámítások:")
+    print(f"Minimális sávszélesség = (csomópontok száma × üzenethossz) / előírt határidő")
+    print(f"                       = ({A} × {bits_per_message}) / {B/1000}")
+    print(f"                       = {A * bits_per_message} / {B/1000}")
+    print(f"                       ≈ {bandwidth_kbits:.2f} kbit/sec")
+    
+    print(f"\nEredmény: A minimálisan szükséges sávszélesség {bandwidth_kbits:.2f} kbit/sec")    
 
 # Példa használat (az A és B értékeket itt lehet megadni)
-A = 10  # példa érték
+A = 5  # példa érték
 B = 45 # példa érték
 print_results(A, B)
