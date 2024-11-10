@@ -14,7 +14,7 @@ def calculate_event_driven(A, B, bandwidth_bytes_per_sec=125000):
     return max_messages, message_time_ms
 
 def calculate_time_driven(A, B):
-    BITS_PER_MESSAGE = 768        # 720 bit payload + 40 bit overhead + 8 bit gap
+    BITS_PER_MESSAGE = B*16 + 40 + 8        # 720 bit payload + 40 bit overhead + 8 bit gap
     DEADLINE_SEC = B/1000         # B ms = B/1000 sec
     
     bandwidth_bits_sec = (A * BITS_PER_MESSAGE) / DEADLINE_SEC
@@ -54,7 +54,7 @@ def print_results(A, B):
     print(f"- Csomópontok száma (A): {A}")
     print(f"- Előírt határidő (B): {B} ms = {B/1000} sec")
     print(f"- Egy üzenet felépítése:")
-    print(f"  * Payload: 45 × 16 = 720 bit")
+    print(f"  * Payload: {B} × 16 = {B*16} bit")
     print(f"  * Overhead: 40 bit")
     print(f"  * Intermessage Gap: 8 bit")
     print(f"  * Összesen: {bits_per_message} bit")
@@ -69,5 +69,5 @@ def print_results(A, B):
 
 # Példa használat (az A és B értékeket itt lehet megadni)
 A = 5  # példa érték
-B = 45 # példa érték
+B = 50 # példa érték
 print_results(A, B)
